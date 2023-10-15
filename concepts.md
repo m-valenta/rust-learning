@@ -486,3 +486,118 @@ impl Color {
   }
 }
 ```
+
+## Enums
+Combine enum in common sense known from other languages and _"binding"_ to enum values.
+
+### Definition
+Any type can be bind to enum values - it includes structs and other enums. 
+```
+enum Message {
+    Quit,   // Common value 
+    Move { x: i32, y: i32 }, // Bind value with named fields  
+    Write(String), // Bind (single) value
+    ChangeColor(i32, i32, i32), // Bind multiple values
+}
+```
+
+### Instantiating
+Values ar defined under enum (name) namespace, so we can use `::` operator.
+
+```
+let message_1 = Message::Quit;
+let mut message_2 = Message::Move({x: 1, y: 2}); 
+```
+
+### Method
+Like `structs` enum can have methods defined in similar way.
+
+```
+impl Message {
+  // Into self is bind value of Message instance 
+  execute(&self) {
+    // do something
+  }
+}
+```
+
+Methods can be called like this (using `.`)
+```
+Message::Write(string::from("Test")).execute();
+
+```
+
+### match (operator)
+Similar to switch operator in other languages. It's syntax consists from
+- `match` keyword and 
+- multiple branches divided by `,`. 
+Each branch contains of
+- pattern  
+- `=>` operator and
+- expression witch will be executed / returned if pattern match.
+
+All possible values  must be covered by some branch. We can use _default branch_ for the rest of values:
+  - `other => {expression}` expression can use original value which is bind to _value_ variable
+  - `_ => {expression}`  same as previous but we don!t care about original value
+
+All bind values are passed by ref, This is because Rust uses pattern matching to destructure values, and destructuring a value requires a reference to that value.
+- rust contains `*` _dereference operator_ to get original value
+- value is dereferenced automatically when we used it in expression
+
+Example:
+```
+impl Message{
+  fn execute(&self) {
+    match self {
+      Message::Quit => println!("End"),
+      Message::ChangeColor(r, g, b) => {
+        // Block expression can be use for multi-line branches
+        
+        println!("Red {:?}", r);
+        println!("Green {:?}", g);
+        println!("Blue {:?}", b)
+      }, // , is optional here
+      Message:Write(text) => println!("Write {}", text)
+      Message:Move {x, y} => println!("Move to (x: {:?}, y: {:?})", x, y);
+      _ => println!("Others")
+    }
+  }
+}
+```
+
+### if let 
+- syntactic sugar/shortcut for `match`.
+- syntax: `if let {pattern} = {enum_value} { some code }`
+- can contain `else` block as regular `if` 
+- Example:
+```
+if let Message:Write(text) = message_inst {
+  println!("Write: {}", text);
+} else {
+  println!("Unsupported");
+}
+```
+
+### Option<T>
+- enum defined in standard library and included (with it's values) in prelude (automatically used parts of std. lib.).
+- It is used in lang design to represent _null / undefined_ values
+- Definition looks like this:
+```
+Option<T> {
+  None,
+  Some(T)
+}
+```
+- Example of usage:
+```
+fn safe_divide(dividend: f64, divisor: f64) => Option<f64> {
+  if divisor == 0
+    None
+  
+  Some(dividend / divisor)
+}
+```
+
+
+
+

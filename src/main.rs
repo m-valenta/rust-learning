@@ -7,6 +7,7 @@ mod control_flow;
 mod references;
 mod slices_test;
 mod structs;
+mod enums;
 
 // Main entry point
 // - can have parameters etc.
@@ -22,6 +23,7 @@ pub(crate) fn main() {
     references::test();
     slices_test::test();
     structs::test();
+    enums::test();
 
     println!("Finished ..");
 }
