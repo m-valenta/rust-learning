@@ -598,6 +598,143 @@ fn safe_divide(dividend: f64, divisor: f64) => Option<f64> {
 }
 ```
 
+## Project structuring
+Rust offer several levels of hierarchy
+- _Cargo workspace_ is used for large projects. It consist from multiple packages (which evolve together)
+- _Package_ consists of at least one crate
+- _Crate_ is minimal unit which can be compiled. It consist from modules hierarchy.
 
+### Crate
+Is minimal compilable unit. It keeps modules hierarchy.
 
+It has two forms:
+- Binary crate
+  - it is compiled into executable
+  - `src` folder must contain `main.rs` file with entry point (main function) 
+- Library
+  - library / dll in common sense
+  - `src` folder must contain `lib.rs` file
 
+`lib/main.rs` file are used as entry-point/root for module hierarchy
+
+### Package
+Is bundle of one or more crates which provides some functionality. Package is allowed to have just _single library crate_ (should hold common logic) and multiple _binary crates_ (executables). 
+- It is created by `cargo new {project_name}`
+- structure:
+   - `Cargo.toml` file, which describe how to build crates
+   - `src` folder
+     - `lib.rs` / `main.rs` are _crates roots_ and are automatically considered to define binary/library crate which has _same name as a package_
+     - module files
+     - submodule folders
+     - `src/bin` directory which is used for defining _other binary_ crates. All file placed here can be considered as new crate definition (with same name as file has). 
+
+### Modules
+- module hierarchy starts in `main.rs/lib.rs`.
+  - Modules can be defined in root file like this
+```
+mod {module_name} {
+  // module content can be declared directly here
+}
+```
+ - Modules can be extracted to separated files
+```
+mod {module_name};
+```
+   - it references `src\{module_name}.rs` file
+     - which can define _submodules_ by using `mod {submodule_name};`
+       - submodule file must be placed into `src\{module_name}\{submodule_name}.rs` 
+
+### paths
+Paths are used for accessing defined modules content. Path has two variants
+- absolute: `crate::parent::child1::test1()` starting by literal `crate` and modules (declarations) are separated by `::`
+- relative: starts from given scope and can use _module name_ or `self`/`super` literals
+  - `super` is similar to `..\` operator in file system - it moves scope to parent module
+  - `self` can be useful when we need distinguish between items in the current module and items in the parent scope   
+
+Relative paths example
+```
+mod parent {
+
+    fn run_module(){
+        
+        // relative path using module identifier
+        child_1::test_1();
+
+        // relative path using self
+        self::child_1::test_1();
+    }
+
+    mod child_1 {
+      pub fn test_1() {}
+    }
+    mod child_2 {
+      pub fn test_2() {
+
+        // relative path using super
+        super::child_1::test_1();
+
+        // child_1 is inaccessible by this way (could be imported by use)
+        // child_1::test_1(); 
+      }
+    }
+}
+```
+
+### pub modifier
+modules and other file's content is consider to be private. It is accessible only for _sibling and child_ definitions. We can use `pub` modifier to make definitions accessible from other scopes.
+
+Example:
+```
+// from outside we can access only root::test function
+pub mod root {
+    pub fn test(param: &str){
+        println!(param);
+
+        // internal_test is accessible because it is in the same module ( == sibling) 
+        // run function is accessible because it is marked as public 
+        internal_test::run();
+
+        // internal_test.run_2() is inaccessible
+    }
+
+    mod internal_test{
+        pub fn run(){
+            // Test is accessible because it is defined in the parent module (it is child)
+            test("from internal test");
+        }
+
+        fn run_2 {}
+    }
+}
+```
+
+Special behavior of `pub` modifier for:
+- _struct_ when marked as pub - it has no effect on methods and fields. They must be marked by pub to be accessible. 
+- _enum_  when marked as pub all it's variants star to be accessible          
+
+### use keyword
+Similar purpose as using/import introduce path to scope. Format is `use {path};`. Take effect only for wrapping scope.
+
+There are few specifics:
+- _external package_ - after adding reference to Cargo.toml we can use `use {package_name}::{path}`
+- _idiomatic_ - import single func, struct enum etc. into current scope
+- `as` operator can rename imported types if name collide etc. `use {path} as {new_name};`
+- `pub use {path};` can be used for _re-export_ imported types
+- _nested paths_ can short use list `use path::{[sub_path_list]}`. 
+example:
+```
+// example 1
+use std::cmp::Ordering;
+use std::io;
+
+// can be simplified
+use std::{cmp::Ordering, io};
+
+// example 2
+use std::io;
+use std::io::Write;
+
+// can be simplified by using self
+use std::io::{self, Write};
+```
+- glob operator `use {path}::*` for bring all public items into scope
