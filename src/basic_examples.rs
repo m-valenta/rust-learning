@@ -11,3 +11,4 @@ pub mod references;
 pub mod slices_test;
 pub mod structs;
 pub mod enums;
+pub mod vector;

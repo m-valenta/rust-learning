@@ -367,7 +367,7 @@ let s_slice: &str = &s[1..2]; // "tr"
 let s_tr: &str = &str[2..3] // "ri"
 
 // Mutable slice of collection
-let mut s_col: &[i32] = &mut col[..1]; // [1, 2]
+let s_col: &mut [i32] = &mut col[..1]; // [1, 2]
 s_col[0] = 154;
 ```
 
@@ -738,3 +738,149 @@ use std::io::Write;
 use std::io::{self, Write};
 ```
 - glob operator `use {path}::*` for bring all public items into scope
+
+## Collection
+Basic collection are Vector, String, hash map. More collection can be found in [doc](https://doc.rust-lang.org/std/collections/index.html).
+
+### Vector ([doc](https://doc.rust-lang.org/std/vec/struct.Vec.html)) 
+List of value of the same type `Vec<T>`.
+- Vector is owner of it's values, whe is dropped from the scope all values are dropped too
+- Creation of new vector:
+  - Immutable: `let values: Vec<i32> = Vec::new();`
+  - Mutable: `let mut mut_values: Vec<i32> = Vec::new();`
+  - From array `let mut mut_values = Vec::from([1, 2, 3, 4]);`
+  - With initialization using macro: 
+    - `let mut mut_values = vec![1, 2, 3];`
+    - `let mut mut_values = vec![0, 2]; // [0, 0]`
+- Adding new values:
+  - `mut_values.push(4);`
+  - `mut_values.extend([5, 6, 7]);`
+  - `mut_values.insert(1, 2); // (index, value)`
+- Cleaning
+  - `mut.values.clean(); // remove all`
+  - `mut.values.drain(0..5) // remove range and return values as enumerator`
+  - `mut.values.remove(1);`
+- Getting values
+  - `let value = mut_values.pop();` 
+    - returns `Option<T>`   
+  - Indexer:
+    - can cause program to panic
+    - immutable: `let value = &values[10];`
+    - mutable: `let second = &mut values[1];`
+  - Creating slice (mut/immutable) from `Vec<T>`
+      - `let slice: &[isize] = &v;`
+      - `let slice: &mut [isize] = &mut v[2..];`
+      - handy to use it as argument
+  - `let value = mut_values.get(10);`
+    - returns `Option<T>` it doesn't panic
+    - mutable variant `.get_mut(10)`
+  - Accessing value by dereference `*value`    
+- Length
+  - `mut_values.len;`
+- Iterators
+  - can be mutable (&)/immutable (&mut)
+  ```
+    let mut v = vec![100, 32, 57];
+    for i in &mut v {
+        // * operator dereferences value in i 
+        *i += 50;
+    }
+  ```
+
+  ### String ([doc](https://doc.rust-lang.org/std/string/struct.String.html#))
+  The String type, which is provided by Rust’s standard library rather than coded into the core language, is a growable, mutable, owned, UTF-8 encoded string type.
+
+  Two representations 
+    - `String`
+    - string slice
+     - `&str`
+     - `&mut str`
+  
+  In rust the string is very similar (eq. wrapper) to `Vec<u8>` with some limitations and special api.
+  - creation
+    - `String::new()`
+    - `String::from("")`
+    - `32.to_string() // has any type implementing display trait`
+  - updating (`let mut s = String::new();`)
+    - append string `s.push_str("new string");`
+    - append char `s.push('l');`
+    - Using `+` operator
+      - internally using `String.add(self, other: &str) -> String`
+    ```
+    let s1 = String::from("Hello, ");
+    let s2 = String::from("world!");
+    
+    // After this line s1 cannot be used (owner ship moved)
+    let s3 = s1 + &s2; // + &s4 ... + &sn; 
+    ```
+    - using `format!` macro
+    ```
+    let s1 = String::from("tic");
+    let s2 = String::from("tac");
+    let s3 = String::from("toe");
+
+    let s = format!("{s1}-{s2}-{s3}");
+    ```
+    - _Indexing_ (eq. getting char by index) is _not working_ due internal representation (visible character can be represent by multiple bytes)
+    - instead of indexing we can use _slicing_. Rust disallow result to not to be valid string
+    ```
+    // 1 char == 2 bytes
+    let hello = "Здравствуйте";
+    
+    // Valid
+    let s = &hello[0..4];
+
+    // Invalid (cause panic)
+    let s = &hello[0..1];
+    ```
+    - Iterating over string. We have to specify what representation we want to iterate.
+      - bytes (numbers): `for b in "Зд".bytes(){...}`
+      - chars (scalars): `for b in "Зд".chars(){...}` 
+    
+
+Another point about UTF-8 is that there are actually three relevant ways to look at strings from Rust’s perspective: 
+- as bytes, 
+- scalar values, 
+- and grapheme clusters (the closest thing to what we would call letters).
+```
+// Original value
+“नमस्ते”
+
+// Bytes
+[224, 164, 168, 224, 164, 174, 224, 164, 184, 224, 165, 141, 224, 164, 164,
+224, 165, 135]
+
+// Scalars
+// '्', 'े' are nor letters but diacritics
+['न', 'म', 'स', '्', 'त', 'े']
+
+// Grapheme clusters
+["न", "म", "स्", "ते"]
+```
+
+## Hash maps ([doc](https://doc.rust-lang.org/std/collections/struct.HashMap.html))
+The type `HashMap<K, V>`` stores a mapping of keys of type K to values of type V using a hashing function.
+- hashing function 
+  - _SipHash_ that can provide resistance to Denial of Service (DoS) attacks involving hash tables1.
+  - Not the fastest hashing algorithm available, but the trade-off for better security.
+  - you can switch to another function by specifying a different `hasher` (type that implements the `BuildHasher` trait).
+- Creation
+   - require std lib usage `use std::collections::HashMap;`
+   - `let mut scores = HashMap::new();`
+- Add values
+  - `scores.insert(String::from("Blue"), 10);`
+    - it overwrites existing values
+    - inserting takes ownership over inserted values
+  - `score.entry("something").or_insert(0);`
+    - insert value only if not exist 
+    - `entry(...)` method returns `Entry` enum
+    - `or_insert(...)` method _returns a mutable reference_ (`&mut V`) to the value for the specified key (can be used by `*` operator).
+- Accessing values
+  - `let score = scores.get(&team_name);`
+  - returns `Option<T>`
+- Iterating
+```
+for (key, value) in &scores {
+    println!("{key}: {value}");
+}
+```

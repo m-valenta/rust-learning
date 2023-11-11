@@ -23,32 +23,7 @@ pub(crate) fn main() {
     basic_examples::slices_test::test();
     basic_examples::structs::test();
     basic_examples::enums::test();
+    basic_examples::vector::test();
 
     println!("Finished ..");
-}
-
-mod parent {
-
-    fn run_module(){
-        
-        // relative path using module identifier
-        child_1::test_1();
-
-        // relative path using self
-        self::child_1::test_1();
-    }
-
-    mod child_1 {
-      pub fn test_1() {}
-    }
-    mod child_2 {
-      pub fn test_2() {
-
-        // relative path using super
-        super::child_1::test_1();
-
-        // child_1 is inaccessible by this way (could be imported by use)
-        // child_1::test_1(); 
-      }
-    }
 }
